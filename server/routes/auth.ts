@@ -52,15 +52,22 @@ router.post('/register', validateBody(signupSchema), async (req: Request, res: R
 router.post('/login', validateBody(loginSchema), async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    console.log('🔐 Login attempt for:', email);
 
     // Find user and include password
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(401).json({ message: 'Invalid email or password' });
     }
+    
+    console.log('✅ User found:', user.email, 'Role:', user.role);
+    console.log('   Password hash exists:', !!user.password);
 
     // Check password
     const isPasswordValid = await user.comparePassword(password);
+    console.log('   Password valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }

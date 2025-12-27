@@ -33,12 +33,20 @@ async function seedAdmin() {
     const existingAdmin = await User.findOne({ email: 'admin@rapidresponse.com' });
     
     if (existingAdmin) {
-      console.log('⚠️  Admin user already exists');
+      console.log('⚠️  Admin user already exists - resetting password...');
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('Admin@123', salt);
+      await User.updateOne(
+        { email: 'admin@rapidresponse.com' },
+        { $set: { password: hashedPassword, role: 'admin' } }
+      );
+      console.log('✅ Admin password reset successfully!');
       console.log('   Email: admin@rapidresponse.com');
+      console.log('   Password: Admin@123');
     } else {
       // Create admin user
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('admin123', salt);
+      const hashedPassword = await bcrypt.hash('Admin@123', salt);
 
       const admin = new User({
         name: 'System Admin',
