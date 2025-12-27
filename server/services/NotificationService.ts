@@ -10,17 +10,26 @@ console.log('SMTP_PASS:', process.env.SMTP_PASS ? 'SET' : 'NOT SET');
 
 // Email Configuration
 let emailTransporter: nodemailer.Transporter | null = null;
-if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  // If using Gmail, it's better to use the 'service' property
+  const isGmail = process.env.SMTP_HOST?.includes('gmail');
+  
   emailTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
+    ...(isGmail ? { service: 'gmail' } : {
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_PORT === '465',
+    }),
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Add timeouts to prevent hanging
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
-  console.log('✅ SMTP configured successfully');
+  console.log(`✅ SMTP configured successfully (${isGmail ? 'Gmail' : 'Custom'})`);
 } else {
   console.warn('⚠️  SMTP not configured. Email notifications will be skipped.');
 }
