@@ -36,10 +36,12 @@ import {
     MapPin,
     MoreHorizontal,
     RefreshCw,
+    Settings,
     Shield,
     Trash2,
     TrendingUp,
-    UserCheck
+    UserCheck,
+    Users
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -230,18 +232,9 @@ export default function AdminDashboard() {
   };
 
   const renderDashboard = () => (
-    <div className="min-h-screen pt-16 bg-background">
-      <AdminSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
-      
-      <main
-        className={cn(
-          'transition-all duration-300',
-          sidebarCollapsed ? 'ml-16' : 'ml-60'
-        )}
-      >
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold mb-2 text-foreground">Dashboard</h1>
               <p className="text-muted-foreground">
@@ -481,8 +474,6 @@ export default function AdminDashboard() {
             </motion.div>
           </div>
         </div>
-      </main>
-    </div>
   );
 
   const renderAllIncidents = () => (
