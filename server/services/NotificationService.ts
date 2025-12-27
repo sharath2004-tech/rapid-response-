@@ -8,10 +8,12 @@ console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN ? 'SET' : 'NOT S
 console.log('SMTP_USER:', process.env.SMTP_USER || 'NOT SET');
 console.log('SMTP_PASS:', process.env.SMTP_PASS ? 'SET' : 'NOT SET');
 
-// Email Configuration
+// Email Configuration - disabled in production due to Render SMTP limitations
+// Most cloud platforms block outbound SMTP. Use a service like SendGrid, Mailgun, or Resend instead.
 let emailTransporter: nodemailer.Transporter | null = null;
-if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-  // If using Gmail, it's better to use the 'service' property
+const ENABLE_EMAIL = process.env.ENABLE_EMAIL === 'true';
+
+if (ENABLE_EMAIL && process.env.SMTP_USER && process.env.SMTP_PASS) {
   const isGmail = process.env.SMTP_HOST?.includes('gmail');
   
   emailTransporter = nodemailer.createTransport({
@@ -24,14 +26,13 @@ if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-    // Add timeouts to prevent hanging
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000,
   });
   console.log(`✅ SMTP configured successfully (${isGmail ? 'Gmail' : 'Custom'})`);
 } else {
-  console.warn('⚠️  SMTP not configured. Email notifications will be skipped.');
+  console.warn('⚠️  Email disabled. Set ENABLE_EMAIL=true to enable (may cause timeouts on some cloud platforms).');
 }
 
 // Twilio Configuration
