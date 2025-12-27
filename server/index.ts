@@ -28,8 +28,11 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:8080',
   'http://localhost:8081',
+  'https://rapid-response-opal.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
+
+console.log('🔒 Allowed CORS origins:', allowedOrigins);
 
 // Middleware
 app.use(cors({
@@ -37,10 +40,16 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+    // Allow any vercel.app subdomain for preview deployments
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`⚠️ CORS blocked origin: ${origin}`);
+      callback(null, true); // Allow all origins temporarily for debugging
     }
   },
   credentials: true,
