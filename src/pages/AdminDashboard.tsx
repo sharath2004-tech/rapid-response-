@@ -42,7 +42,7 @@ import {
     UserCheck
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const typeIcons: Record<IncidentType, React.ReactNode> = {
   medical: <Heart className="w-4 h-4" />,
@@ -70,6 +70,8 @@ interface SOSAlert {
 }
 
 export default function AdminDashboard() {
+  const location = useLocation();
+  const currentPath = location.pathname;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [sosAlerts, setSOSAlerts] = useState<SOSAlert[]>([]);
@@ -209,7 +211,25 @@ export default function AdminDashboard() {
     );
   }
 
-  return (
+  // Determine which page to render based on path
+  const renderContent = () => {
+    if (currentPath === '/admin' || currentPath === '/admin/') {
+      return renderDashboard();
+    } else if (currentPath === '/admin/incidents') {
+      return renderAllIncidents();
+    } else if (currentPath === '/admin/priority') {
+      return renderPriorityQueue();
+    } else if (currentPath === '/admin/analytics') {
+      return renderAnalytics();
+    } else if (currentPath === '/admin/responders') {
+      return renderResponders();
+    } else if (currentPath === '/admin/settings') {
+      return renderSettings();
+    }
+    return renderDashboard(); // Default
+  };
+
+  const renderDashboard = () => (
     <div className="min-h-screen pt-16 bg-background">
       <AdminSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
       
@@ -461,6 +481,161 @@ export default function AdminDashboard() {
             </motion.div>
           </div>
         </div>
+      </main>
+    </div>
+  );
+
+  const renderAllIncidents = () => (
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 text-foreground">All Incidents</h1>
+        <p className="text-muted-foreground">View and manage all reported incidents</p>
+      </div>
+
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-5 py-3">Incident</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-5 py-3">Type</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-5 py-3">Severity</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-5 py-3">Status</th>
+                <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-5 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {incidents.map((incident) => (
+                <tr key={incident._id} className="hover:bg-accent/50 transition-colors">
+                  <td className="px-5 py-4">
+                    <div className="max-w-xs">
+                      <p className="font-medium text-sm truncate text-card-foreground">{incident.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{incident.location.address}</p>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">{typeIcons[incident.type]}</span>
+                      <span className="text-sm capitalize text-card-foreground">{incident.type.replace('-', ' ')}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <SeverityBadge severity={incident.severity} />
+                  </td>
+                  <td className="px-5 py-4">
+                    <Select value={incident.status} onValueChange={(value) => handleStatusChange(incident._id, value as IncidentStatus)}>
+                      <SelectTrigger className="w-32 h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unverified">Unverified</SelectItem>
+                        <SelectItem value="verified">Verified</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-5 py-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="w-4 h-4" /></Button></DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <Link to={`/incident/${incident._id}`}><DropdownMenuItem><Eye className="w-4 h-4 mr-2" />View Details</DropdownMenuItem></Link>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteIncident(incident._id)}><Trash2 className="w-4 h-4 mr-2" />Delete</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPriorityQueue = () => (
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 text-foreground">Priority Queue</h1>
+        <p className="text-muted-foreground">High priority incidents requiring immediate attention</p>
+      </div>
+
+      <div className="grid gap-4">
+        {priorityIncidents.map((incident) => (
+          <Link key={incident._id} to={`/incident/${incident._id}`} className={cn('block p-5 rounded-xl border transition-colors hover:bg-accent/50', incident.severity === 'critical' ? 'border-destructive/30 bg-destructive/5' : 'border-warning/30 bg-warning/5')}>
+            <div className="flex items-start gap-4">
+              <div className={cn('p-3 rounded-lg', incident.severity === 'critical' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning')}>{typeIcons[incident.type]}</div>
+              <div className="flex-1">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg text-card-foreground">{incident.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{incident.description}</p>
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1"><MapPin className="w-3 h-3" />{incident.location.address}</p>
+                  </div>
+                  <SeverityBadge severity={incident.severity} />
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+        {priorityIncidents.length === 0 && <p className="text-center py-12 text-muted-foreground">No high priority incidents</p>}
+      </div>
+    </div>
+  );
+
+  const renderAnalytics = () => (
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 text-foreground">Analytics</h1>
+        <p className="text-muted-foreground">Incident statistics and trends</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat, index) => (
+          <motion.div key={stat.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="bg-card border border-border rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className={cn('p-3 rounded-lg', stat.bgColor)}><stat.icon className={cn('w-6 h-6', stat.color)} /></div>
+            </div>
+            <p className="text-3xl font-bold text-card-foreground mb-1">{stat.value}</p>
+            <p className="text-sm text-muted-foreground">{stat.title}</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderResponders = () => (
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 text-foreground">Responders</h1>
+        <p className="text-muted-foreground">Manage emergency responders and teams</p>
+      </div>
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
+        <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+        <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
+        <p className="text-muted-foreground">Responder management features will be available soon</p>
+      </div>
+    </div>
+  );
+
+  const renderSettings = () => (
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 text-foreground">Settings</h1>
+        <p className="text-muted-foreground">Configure system settings and preferences</p>
+      </div>
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
+        <Settings className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+        <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
+        <p className="text-muted-foreground">Settings panel will be available soon</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen pt-16 bg-background">
+      <AdminSidebar collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+      
+      <main className={cn('transition-all duration-300', sidebarCollapsed ? 'ml-16' : 'ml-60')}>
+        {renderContent()}
       </main>
     </div>
   );
