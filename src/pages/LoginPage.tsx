@@ -30,10 +30,9 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await login(email, password);
-      // Get user from localStorage after login
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       if (user.role === 'admin') {
-        navigate('/admin-dashboard');
+        navigate('/admin');
       } else {
         navigate('/');
       }
